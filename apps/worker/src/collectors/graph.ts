@@ -1,5 +1,4 @@
-import { db } from '@guardiboard/db';
-import { connectors, collectionJobs, collectionCheckpoints } from '@guardiboard/db/src/schema';
+import { db, connectors, collectionJobs } from '@guardiboard/db';
 import { eq, and } from 'drizzle-orm';
 
 export interface GraphCollectorConfig {

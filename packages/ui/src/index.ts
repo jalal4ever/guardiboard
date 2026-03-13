@@ -35,7 +35,7 @@ export const statusColors = {
 } as const;
 
 export const scopeColors = {
-  hybrid: 'bg-purple-500 text-white',
+  hybrid: 'bg-sky-600 text-white',
   ad: 'bg-blue-600 text-white',
   m365: 'bg-teal-500 text-white',
 } as const;

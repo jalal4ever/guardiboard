@@ -1,8 +1,7 @@
-import { Router, Request, Response, NextFunction } from 'express';
-import { getEnv, requireEnv } from '@guardiboard/config';
+import { Request, Response, NextFunction } from 'express';
+import { requireEnv } from '@guardiboard/config';
 import { verifyToken, getTokenFromHeader, type TokenPayload } from '@guardiboard/auth';
-import { db } from '@guardiboard/db';
-import { memberships } from '@guardiboard/db/src/schema';
+import { db, memberships } from '@guardiboard/db';
 import { eq, and } from 'drizzle-orm';
 
 export interface AuthRequest extends Request {

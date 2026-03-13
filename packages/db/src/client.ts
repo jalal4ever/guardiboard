@@ -4,7 +4,7 @@ import * as schema from './schema';
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/guardiboard';
 
-const client = postgres(connectionString, {
+export const client = postgres(connectionString, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 5,

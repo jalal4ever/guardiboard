@@ -1,6 +1,5 @@
 import { Router, Response } from 'express';
-import { db } from '@guardiboard/db';
-import { connectors, collectors, collectionJobs } from '@guardiboard/db/src/schema';
+import { db, connectors, collectors, collectionJobs } from '@guardiboard/db';
 import { authMiddleware, type AuthRequest } from '../middleware/auth';
 import { eq, and, desc } from 'drizzle-orm';
 

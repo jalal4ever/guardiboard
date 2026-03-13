@@ -1,9 +1,8 @@
 import { Router, Response } from 'express';
-import { db } from '@guardiboard/db';
-import { tenants, memberships, users } from '@guardiboard/db/src/schema';
+import { db, tenants, memberships } from '@guardiboard/db';
 import { createTenantSchema } from '@guardiboard/validation';
-import { authMiddleware, requireTenantAccess, type AuthRequest } from '../middleware/auth';
-import { eq, and } from 'drizzle-orm';
+import { authMiddleware, type AuthRequest } from '../middleware/auth';
+import { eq } from 'drizzle-orm';
 
 const router = Router();
 

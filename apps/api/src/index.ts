@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { getEnv, requireEnv } from '@guardiboard/config';
+import { requireEnv } from '@guardiboard/config';
 
 import tenantsRouter from './routes/tenants';
 import connectorsRouter from './routes/connectors';
@@ -9,8 +9,6 @@ import findingsRouter from './routes/findings';
 import dashboardsRouter from './routes/dashboards';
 
 const app = express();
-const env = getEnv();
-
 app.use(helmet());
 app.use(cors());
 app.use(express.json());

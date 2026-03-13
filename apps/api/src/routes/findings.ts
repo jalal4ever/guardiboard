@@ -1,9 +1,8 @@
 import { Router, Response } from 'express';
-import { db } from '@guardiboard/db';
-import { findings } from '@guardiboard/db/src/schema';
+import { db, findings } from '@guardiboard/db';
 import { updateFindingSchema } from '@guardiboard/validation';
 import { authMiddleware, type AuthRequest } from '../middleware/auth';
-import { eq, and, desc, sql, like } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 
 const router = Router();
 

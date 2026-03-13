@@ -65,7 +65,7 @@ export default function OverviewPage() {
               <p className="text-sm font-medium text-slate-500">Applications</p>
               <p className="mt-1 text-3xl font-semibold text-slate-900">89</p>
             </div>
-            <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-full bg-teal-100 flex items-center justify-center">
               <span className="text-lg">📦</span>
             </div>
           </div>

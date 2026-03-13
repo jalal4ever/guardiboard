@@ -1,8 +1,7 @@
-import { getEnv, requireEnv } from '@guardiboard/config';
-import { db } from '@guardiboard/db';
-import { collectionJobs } from '@guardiboard/db/src/schema';
-import { GraphCollector, getActiveConnectors } from './collectors/graph';
-import { eq, and } from 'drizzle-orm';
+import { requireEnv } from '@guardiboard/config';
+import { db, collectionJobs } from '@guardiboard/db';
+import { getActiveConnectors } from './collectors/graph';
+import { eq } from 'drizzle-orm';
 
 async function processCollectionJob(jobId: string) {
   const [job] = await db
