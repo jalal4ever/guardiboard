@@ -1,16 +1,38 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
+
+  const errorParam = searchParams.get('error');
+
+  const handleMicrosoftLogin = async () => {
+    setOauthLoading(true);
+    try {
+      const response = await fetch('/api/auth/oauth/microsoft');
+      const data = await response.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError('Failed to initialize Microsoft login');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setOauthLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +84,16 @@ export default function LoginPage() {
 
         <Card>
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {errorParam && (
+              <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">
+                {errorParam === 'no_token' && 'Authentication failed. Please try again.'}
+                {errorParam === 'callback_failed' && 'Authentication failed. Please try again.'}
+                {errorParam === 'missing_params' && 'Missing authentication parameters.'}
+                {errorParam === 'invalid_state' && 'Invalid authentication request. Please try again.'}
+                {errorParam === 'no_email' && 'Could not retrieve email from Microsoft account.'}
+              </div>
+            )}
+
             {error && (
               <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">
                 {error}
@@ -143,12 +175,14 @@ export default function LoginPage() {
             <div className="mt-6">
               <button
                 type="button"
-                className="w-full btn-secondary flex items-center justify-center gap-2"
+                onClick={handleMicrosoftLogin}
+                disabled={oauthLoading}
+                className="w-full btn-secondary flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385c.6.105.825-.255.825-.57c0-.285-.015-1.23-.015-2.235c-3.015.555-3.795-.735-4.035-1.41c-.135-.345-.72-1.41-1.23-1.695c-.42-.225-1.02-.78-.015-.795c.945-.015 1.62.87 1.845 1.23c1.08 1.815 2.805 1.305 3.495.99c.105-.78.42-1.305.765-1.605c-2.67-.3-5.46-1.335-5.46-5.925c0-1.305.465-2.385 1.23-3.225c-.12-.3-.54-1.53.12-3.18c0 0 1.005-.315 3.3 1.23c.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23c.66 1.65.24 2.88.12 3.18c.765.84 1.23 1.905 1.23 3.225c0 4.605-2.805 5.625-5.475 5.925c.435.375.81 1.095.81 2.22c0 1.605-.015 2.895-.015 3.3c0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
                 </svg>
-                Connexion avec Microsoft
+                {oauthLoading ? 'Redirection...' : 'Connexion avec Microsoft'}
               </button>
             </div>
           </div>

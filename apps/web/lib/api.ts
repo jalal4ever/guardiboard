@@ -2,6 +2,27 @@ import { cookies } from 'next/headers';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 
+export interface SessionUser {
+  id: string;
+  email: string;
+  name?: string;
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  scope: string;
+  role: string;
+}
+
+export interface Session {
+  user: SessionUser;
+  tenants: Tenant[];
+  currentTenant: Tenant | null;
+  role: string;
+}
+
 export async function fetchApi<T>(
   endpoint: string,
   options: {
@@ -18,7 +39,7 @@ export async function fetchApi<T>(
 
   if (requireAuth) {
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('gb_session');
+    const sessionCookie = cookieStore.get('auth_token');
 
     if (!sessionCookie) {
       return { data: null, error: 'Not authenticated', status: 401 };
@@ -32,6 +53,7 @@ export async function fetchApi<T>(
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      credentials: 'include',
     });
 
     const data = await response.json();
@@ -47,20 +69,15 @@ export async function fetchApi<T>(
   }
 }
 
-export async function getSession() {
+export async function getSession(): Promise<Session | null> {
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('gb_session');
+  const sessionCookie = cookieStore.get('auth_token');
   
   if (!sessionCookie) {
     return null;
   }
 
-  const result = await fetchApi<{
-    user: { id: string; email: string; name: string };
-    tenants: Array<{ id: string; name: string; slug: string; scope: string; role: string }>;
-    currentTenant: { id: string; name: string; slug: string; scope: string } | null;
-    role: string;
-  }>('/api/auth/me', { requireAuth: false });
+  const result = await fetchApi<Session>('/api/auth/me', { requireAuth: false });
 
   if (result.error || !result.data) {
     return null;
@@ -69,8 +86,7 @@ export async function getSession() {
   return result.data;
 }
 
-export function clearSession() {
-  return cookies().then(cookieStore => {
-    cookieStore.delete('gb_session');
-  });
+export async function clearSession(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete('auth_token');
 }
