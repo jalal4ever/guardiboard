@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { cn } from '@guardiboard/ui';
 
 const navigation = [
@@ -71,8 +72,83 @@ function CogIcon({ className }: { className?: string }) {
   );
 }
 
+function LogoutIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+    </svg>
+  );
+}
+
+interface UserInfo {
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+  };
+  tenants: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    scope: string;
+    role: string;
+  }>;
+  currentTenant: {
+    id: string;
+    name: string;
+    slug: string;
+    scope: string;
+  } | null;
+  role: string;
+}
+
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUserInfo() {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUserInfo(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user info:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUserInfo();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/oauth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const getInitials = (name?: string, email?: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    if (email) {
+      return email.slice(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
 
   return (
     <div className="flex h-16 bg-white border-b border-slate-200 lg:h-full lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
@@ -103,15 +179,44 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-slate-200 p-4 lg:p-4">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-slate-200 flex items-center justify-center">
-            <span className="text-sm font-medium text-slate-600">JD</span>
+        {loading ? (
+          <div className="animate-pulse flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-slate-200"></div>
+            <div className="flex-1">
+              <div className="h-4 w-24 bg-slate-200 rounded"></div>
+              <div className="h-3 w-32 bg-slate-200 rounded mt-1"></div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-900 truncate">John Doe</p>
-            <p className="text-xs text-slate-500 truncate">john@example.com</p>
+        ) : userInfo ? (
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-accent-100 flex items-center justify-center">
+              <span className="text-sm font-medium text-accent-700">
+                {getInitials(userInfo.user.name, userInfo.user.email)}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-900 truncate">
+                {userInfo.user.name || userInfo.user.email.split('@')[0]}
+              </p>
+              <p className="text-xs text-slate-500 truncate">
+                {userInfo.currentTenant?.name || 'No tenant'}
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+              title="Logout"
+            >
+              <LogoutIcon className="h-5 w-5" />
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-slate-200 flex items-center justify-center">
+              <span className="text-sm font-medium text-slate-600">?</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
