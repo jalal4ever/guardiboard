@@ -1,9 +1,6 @@
-import { ConfidentialClientApplication, ClientCredentialRequest, Configuration } from '@azure/msal-node';
 import { requireEnv } from '@guardiboard/config';
-import fs from 'fs';
-import path from 'path';
 
-let msalInstance: ConfidentialClientApplication | null = null;
+let cachedToken: { accessToken: string; expiresAt: Date } | null = null;
 
 export interface TokenResult {
   accessToken: string;
@@ -11,62 +8,67 @@ export interface TokenResult {
   scope: string[];
 }
 
-export async function getMsalInstance(): Promise<ConfidentialClientApplication> {
-  if (msalInstance) {
-    return msalInstance;
-  }
-
-  const clientId = requireEnv('AZURE_CLIENT_ID');
+async function getTokenEndpoint(): Promise<string> {
   const tenantId = requireEnv('AZURE_TENANT_ID');
-  const certPath = process.env.AZURE_CLIENT_CERT_PATH;
-  const certPassword = process.env.AZURE_CLIENT_CERT_PASSWORD;
-
-  const msalConfig: Configuration = {
-    auth: {
-      clientId,
-      authority: `https://login.microsoftonline.com/${tenantId}`,
-      clientCapabilities: ['CP1'],
-    },
-  };
-
-  if (certPath && fs.existsSync(certPath)) {
-    msalConfig.auth.clientCertificate = {
-      path: certPath,
-      password: certPassword,
-    };
-  } else {
-    const clientSecret = process.env.AZURE_CLIENT_SECRET;
-    if (clientSecret) {
-      msalConfig.auth.clientSecret = clientSecret;
-    } else {
-      throw new Error('Either AZURE_CLIENT_CERT_PATH or AZURE_CLIENT_SECRET must be provided');
-    }
-  }
-
-  msalInstance = new ConfidentialClientApplication(msalConfig);
-  return msalInstance;
+  return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
 }
 
 export async function acquireTokenForTenant(azureTenantId: string): Promise<TokenResult> {
-  const msal = await getMsalInstance();
+  const tenantId = requireEnv('AZURE_TENANT_ID');
+  const clientId = requireEnv('AZURE_CLIENT_ID');
+  const clientSecret = process.env.AZURE_CLIENT_SECRET;
   
-  const clientCredentialRequest: ClientCredentialRequest = {
-    scopes: ['https://graph.microsoft.com/.default'],
-    azureTenantId,
-  };
-
-  const result = await msal.acquireTokenByClientCredential(clientCredentialRequest);
-
-  if (!result.accessToken) {
-    throw new Error('Failed to acquire access token');
+  if (!clientSecret) {
+    throw new Error('AZURE_CLIENT_SECRET is required');
   }
 
-  const expiresAt = new Date(result.expiresOn?.getTime() || Date.now() + 3600 * 1000);
+  if (cachedToken && cachedToken.expiresAt > new Date()) {
+    return {
+      accessToken: cachedToken.accessToken,
+      expiresAt: cachedToken.expiresAt,
+      scope: ['https://graph.microsoft.com/.default'],
+    };
+  }
+
+  const tokenUrl = await getTokenEndpoint();
+  
+  const params = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: 'https://graph.microsoft.com/.default',
+    tenant: tenantId,
+  });
+
+  const response = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to acquire token: ${response.status} - ${error}`);
+  }
+
+  const data = await response.json() as {
+    access_token: string;
+    expires_in: number;
+    token_type: string;
+  };
+
+  const expiresAt = new Date(Date.now() + (data.expires_in - 60) * 1000);
+  
+  cachedToken = {
+    accessToken: data.access_token,
+    expiresAt,
+  };
 
   return {
-    accessToken: result.accessToken,
+    accessToken: data.access_token,
     expiresAt,
-    scope: clientCredentialRequest.scopes,
+    scope: ['https://graph.microsoft.com/.default'],
   };
 }
 
