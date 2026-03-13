@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "microsoft-graph": {
+      "type": "local",
+      "command": [
+        "/home/jalal4ever/.local/bin/uvx",
+        "--from",
+        "git+https://github.com/elyxlz/microsoft-mcp.git",
+        "microsoft-mcp"
+      ],
+      "environment": {
+        "MICROSOFT_MCP_CLIENT_ID": "51685bd9-d399-4aca-a4a6-6aacb60220e4"
+      },
+      "enabled": true
+    }
+  }
+}
+
