@@ -7,6 +7,8 @@ import tenantsRouter from './routes/tenants';
 import connectorsRouter from './routes/connectors';
 import findingsRouter from './routes/findings';
 import dashboardsRouter from './routes/dashboards';
+import postureRouter from './routes/posture';
+import assetsRouter from './routes/assets';
 
 const app = express();
 app.use(helmet());
@@ -25,6 +27,8 @@ app.use('/api/tenants', tenantsRouter);
 app.use('/api/connectors', connectorsRouter);
 app.use('/api/findings', findingsRouter);
 app.use('/api/dashboards', dashboardsRouter);
+app.use('/api/posture', postureRouter);
+app.use('/api/assets', assetsRouter);
 
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Unhandled error:', err);
