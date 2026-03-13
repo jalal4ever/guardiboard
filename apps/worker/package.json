@@ -13,6 +13,7 @@
     "@guardiboard/types": "workspace:*",
     "@guardiboard/db": "workspace:*",
     "@guardiboard/config": "workspace:*",
+    "@azure/msal-node": "^2.6.0",
     "drizzle-orm": "^0.29.0"
   },
   "devDependencies": {

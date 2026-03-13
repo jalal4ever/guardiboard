@@ -59,15 +59,22 @@ export const graphConnections = pgTable('graph_connections', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   connectorId: uuid('connector_id').notNull().references(() => connectors.id, { onDelete: 'cascade' }),
+  azureTenantId: varchar('azure_tenant_id', { length: 50 }),
   tenantDomain: varchar('tenant_domain', { length: 255 }),
+  consentStatus: varchar('consent_status', { length: 20 }).default('pending'),
+  consentGrantedAt: timestamp('consent_granted_at'),
   accessTokenEncrypted: text('access_token_encrypted'),
   refreshTokenEncrypted: text('refresh_token_encrypted'),
   tokenExpiresAt: timestamp('token_expires_at'),
   scopes: text('scopes').array(),
+  lastSuccessfulRunAt: timestamp('last_successful_run_at'),
+  lastErrorCode: varchar('last_error_code', { length: 50 }),
+  lastErrorMessage: text('last_error_message'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
   connectorIdx: index('idx_graph_connections_connector').on(table.connectorId),
+  azureTenantIdx: index('idx_graph_connections_azure_tenant').on(table.azureTenantId),
 }));
 
 export const collectors = pgTable('collectors', {

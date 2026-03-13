@@ -1,7 +1,50 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Login failed');
+        return;
+      }
+
+      if (data.requiresTenantSelection) {
+        router.push('/select-tenant');
+      } else if (data.tenants && data.tenants.length > 0) {
+        router.push('/overview');
+      } else {
+        router.push('/overview');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-md space-y-8">
@@ -18,7 +61,13 @@ export default function LoginPage() {
         </div>
 
         <Card>
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">
+                {error}
+              </div>
+            )}
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                 Email
@@ -29,6 +78,8 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="input mt-1"
                 placeholder="vous@entreprise.com"
               />
@@ -44,6 +95,8 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="input mt-1"
                 placeholder="••••••••"
               />
@@ -70,9 +123,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="btn-primary w-full"
+              disabled={loading}
+              className="btn-primary w-full disabled:opacity-50"
             >
-              Se connecter
+              {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
 

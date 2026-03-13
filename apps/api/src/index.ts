@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { requireEnv } from '@guardiboard/config';
 
+import authRouter from './routes/auth';
 import tenantsRouter from './routes/tenants';
 import connectorsRouter from './routes/connectors';
 import findingsRouter from './routes/findings';
@@ -23,6 +24,7 @@ app.get('/api', (req, res) => {
   res.json({ message: 'Guardiboard API', version: '1.0.0' });
 });
 
+app.use('/api/auth', authRouter);
 app.use('/api/tenants', tenantsRouter);
 app.use('/api/connectors', connectorsRouter);
 app.use('/api/findings', findingsRouter);

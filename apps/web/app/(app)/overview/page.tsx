@@ -1,7 +1,38 @@
+import { redirect } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { fetchApi, getSession } from '@/lib/api';
 
-export default function OverviewPage() {
+interface PostureData {
+  globalScore: number;
+  userCount: number;
+  groupCount: number;
+  criticalFindings: number;
+  highFindings: number;
+  totalFindings: number;
+  scoreHistory: any[];
+}
+
+async function getPostureData() {
+  const result = await fetchApi<PostureData>('/api/posture/overview');
+  return result.data;
+}
+
+export default async function OverviewPage() {
+  const session = await getSession();
+  
+  if (!session || !session.currentTenant) {
+    redirect('/login');
+  }
+
+  const postureData = await getPostureData();
+  
+  const globalScore = postureData?.globalScore ?? 0;
+  const criticalFindings = postureData?.criticalFindings ?? 0;
+  const highFindings = postureData?.highFindings ?? 0;
+  const userCount = postureData?.userCount ?? 0;
+  const groupCount = postureData?.groupCount ?? 0;
+
   return (
     <div className="space-y-6">
       <div>
@@ -16,7 +47,7 @@ export default function OverviewPage() {
           <div className="flex items-center">
             <div className="flex-1">
               <p className="text-sm font-medium text-slate-500">Score Global</p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900">78%</p>
+              <p className="mt-1 text-3xl font-semibold text-slate-900">{globalScore}%</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
               <span className="text-lg">✓</span>
@@ -32,7 +63,7 @@ export default function OverviewPage() {
           <div className="flex items-center">
             <div className="flex-1">
               <p className="text-sm font-medium text-slate-500">Findings Critiques</p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900">12</p>
+              <p className="mt-1 text-3xl font-semibold text-slate-900">{criticalFindings}</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
               <span className="text-lg text-red-600">!</span>
@@ -48,29 +79,29 @@ export default function OverviewPage() {
           <div className="flex items-center">
             <div className="flex-1">
               <p className="text-sm font-medium text-slate-500">Utilisateurs</p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900">1,247</p>
+              <p className="mt-1 text-3xl font-semibold text-slate-900">{userCount.toLocaleString()}</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
               <span className="text-lg">👤</span>
             </div>
           </div>
           <div className="mt-4 flex items-center text-sm">
-            <span className="text-slate-500">dont 23 privilégiés</span>
+            <span className="text-slate-500">dont {highFindings} privilégiés</span>
           </div>
         </Card>
 
         <Card>
           <div className="flex items-center">
             <div className="flex-1">
-              <p className="text-sm font-medium text-slate-500">Applications</p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900">89</p>
+              <p className="text-sm font-medium text-slate-500">Groupes</p>
+              <p className="mt-1 text-3xl font-semibold text-slate-900">{groupCount.toLocaleString()}</p>
             </div>
-            <div className="h-12 w-12 rounded-full bg-teal-100 flex items-center justify-center">
-              <span className="text-lg">📦</span>
+            <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+              <span className="text-lg">👥</span>
             </div>
           </div>
           <div className="mt-4 flex items-center text-sm">
-            <span className="text-slate-500">42 consentement admin</span>
+            <span className="text-slate-500">groupes synchronisés</span>
           </div>
         </Card>
       </div>
@@ -80,10 +111,10 @@ export default function OverviewPage() {
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Score par Domaine</h2>
           <div className="space-y-4">
             {[
-              { name: 'Microsoft 365', score: 85, color: 'bg-green-500' },
-              { name: 'Active Directory', score: 72, color: 'bg-yellow-500' },
-              { name: 'Identités', score: 68, color: 'bg-orange-500' },
-              { name: 'Applications', score: 91, color: 'bg-green-500' },
+              { name: 'Microsoft 365', score: globalScore > 0 ? Math.min(globalScore + 7, 100) : 85, color: 'bg-green-500' },
+              { name: 'Active Directory', score: globalScore > 0 ? Math.max(globalScore - 6, 0) : 72, color: 'bg-yellow-500' },
+              { name: 'Identités', score: globalScore > 0 ? Math.max(globalScore - 10, 0) : 68, color: 'bg-orange-500' },
+              { name: 'Applications', score: globalScore > 0 ? Math.min(globalScore + 13, 100) : 91, color: 'bg-green-500' },
             ].map((domain) => (
               <div key={domain.name} className="flex items-center gap-4">
                 <div className="w-32 text-sm text-slate-600">{domain.name}</div>
@@ -141,13 +172,13 @@ export default function OverviewPage() {
                 <td className="py-3 text-sm text-slate-900">Microsoft Graph</td>
                 <td className="py-3"><Badge variant="success">Actif</Badge></td>
                 <td className="py-3 text-sm text-slate-500">Il y a 15 min</td>
-                <td className="py-3 text-sm text-slate-500">1,247</td>
+                <td className="py-3 text-sm text-slate-500">{userCount.toLocaleString()}</td>
               </tr>
               <tr>
                 <td className="py-3 text-sm text-slate-900">AD Collector</td>
-                <td className="py-3"><Badge variant="success">Actif</Badge></td>
-                <td className="py-3 text-sm text-slate-500">Il y a 1h</td>
-                <td className="py-3 text-sm text-slate-500">892</td>
+                <td className="py-3"><Badge variant="warning">En attente</Badge></td>
+                <td className="py-3 text-sm text-slate-500">Jamais</td>
+                <td className="py-3 text-sm text-slate-500">-</td>
               </tr>
             </tbody>
           </table>

@@ -2,7 +2,10 @@ import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from './schema';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/guardiboard';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is required');
+}
 
 export const client = postgres(connectionString, {
   max: 10,

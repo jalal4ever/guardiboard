@@ -3,10 +3,12 @@ import { requireEnv } from '@guardiboard/config';
 import { verifyToken, getTokenFromHeader, type TokenPayload } from '@guardiboard/auth';
 import { db, memberships } from '@guardiboard/db';
 import { eq, and } from 'drizzle-orm';
+import type { Role } from '@guardiboard/types';
 
 export interface AuthRequest extends Request {
   user?: TokenPayload;
   tenantId?: string;
+  userRole?: Role;
 }
 
 export async function authMiddleware(
@@ -33,6 +35,7 @@ export async function authMiddleware(
 
     req.user = payload;
     req.tenantId = payload.tenantId;
+    req.userRole = payload.role as Role;
 
     next();
   } catch (error) {
@@ -48,7 +51,7 @@ export async function requireTenantAccess(
 ): Promise<void> {
   try {
     if (!req.user || !req.tenantId) {
-      res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized', message: 'Tenant-scoped token required' });
       return;
     }
 
@@ -68,9 +71,29 @@ export async function requireTenantAccess(
       return;
     }
 
+    req.userRole = membership[0].role;
     next();
   } catch (error) {
     console.error('Tenant access error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+}
+
+export function requireRole(...allowedRoles: Role[]) {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    if (!req.userRole) {
+      res.status(401).json({ error: 'Unauthorized', message: 'Authentication required' });
+      return;
+    }
+
+    if (!allowedRoles.includes(req.userRole)) {
+      res.status(403).json({ 
+        error: 'Forbidden', 
+        message: `This action requires one of these roles: ${allowedRoles.join(', ')}` 
+      });
+      return;
+    }
+
+    next();
+  };
 }

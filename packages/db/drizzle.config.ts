@@ -5,7 +5,7 @@ export default defineConfig({
   out: './migrations',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/guardiboard',
+    url: process.env.DATABASE_URL,
   },
   verbose: true,
   strict: true,

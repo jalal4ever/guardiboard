@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db, tenants, memberships } from '@guardiboard/db';
 import { createTenantSchema } from '@guardiboard/validation';
-import { authMiddleware, type AuthRequest } from '../middleware/auth';
+import { authMiddleware, requireTenantAccess, type AuthRequest } from '../middleware/auth';
 import { eq } from 'drizzle-orm';
 
 const router = Router();
@@ -33,7 +33,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', requireTenantAccess, async (req: AuthRequest, res: Response) => {
   try {
     const parsed = createTenantSchema.safeParse(req.body);
     
@@ -75,7 +75,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.get('/:tenantId', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/:tenantId', requireTenantAccess, async (req: AuthRequest, res: Response) => {
   try {
     const { tenantId } = req.params;
     

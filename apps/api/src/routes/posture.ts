@@ -1,11 +1,12 @@
 import { Router, Response } from 'express';
 import { db, secureScores, identityUsers, identityGroups, findings } from '@guardiboard/db';
-import { authMiddleware, type AuthRequest } from '../middleware/auth';
+import { authMiddleware, requireTenantAccess, type AuthRequest } from '../middleware/auth';
 import { eq, sql, and } from 'drizzle-orm';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requireTenantAccess);
 
 router.get('/overview', async (req: AuthRequest, res: Response) => {
   try {
