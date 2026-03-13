@@ -63,7 +63,7 @@ Guardiboard permet de **"superviser ce que l'on veut, comme on le veut"** — un
 *  pnpm 8+
 *  PostgreSQL 15+
 *  Docker (optionnel)
-*  **Recommandation IA** : Installez le plugin "Oh My OpenCode" (`opencode plugin add oh-my-opencode` ou via package.json). Ce plugin remplace les agents standards et active des sous-agents "Librarians" travaillant en arrière-plan pour rechercher la documentation complexe (Microsoft Graph, LDAP) sans bloquer le développement principal.
+*  **Recommandation IA** : Définissez vos sous-agents personnalisés dans le dossier `.opencode/agents/` pour déléguer les tâches techniques (AD, M365, Security, UI).
 
 ##### Production
 *  Azure Key Vault (secrets)
