@@ -1,0 +1,12 @@
+{
+  "name": "@guardiboard/collector-windows-ad",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Collecteur Active Directory On-Premise pour Guardiboard",
+  "main": "src/index.ps1",
+  "scripts": {
+    "test": "pwsh -File src/tests/test-basic.ps1"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

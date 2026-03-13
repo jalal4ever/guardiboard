@@ -1,0 +1,26 @@
+{
+  "name": "guardiboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plateforme SaaS de supervision de la posture de sécurité (AD On-Premise + M365)",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "db:generate": "pnpm --filter @guardiboard/db generate",
+    "db:push": "pnpm --filter @guardiboard/db push",
+    "db:migrate": "pnpm --filter @guardiboard/db migrate"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "@types/node": "^20.11.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
