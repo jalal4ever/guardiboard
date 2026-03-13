@@ -220,6 +220,8 @@ export const auditLogs = pgTable('audit_logs', {
   createdAtIdx: index('idx_audit_logs_created_at').on(table.createdAt),
 }));
 
+export { db, client } from './client';
+
 export type Tenant = typeof tenants.$inferSelect;
 export type NewTenant = typeof tenants.$inferInsert;
 export type User = typeof users.$inferSelect;

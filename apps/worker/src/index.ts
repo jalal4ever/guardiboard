@@ -1,16 +1,53 @@
 import { getEnv, requireEnv } from '@guardiboard/config';
+import { db } from '@guardiboard/db';
+import { collectionJobs } from '@guardiboard/db/src/schema';
+import { GraphCollector, getActiveConnectors } from './collectors/graph';
+import { eq, and } from 'drizzle-orm';
+
+async function processCollectionJob(jobId: string) {
+  const [job] = await db
+    .select()
+    .from(collectionJobs)
+    .where(eq(collectionJobs.id, jobId))
+    .limit(1);
+
+  if (!job) {
+    console.error(`Job ${jobId} not found`);
+    return;
+  }
+
+  await db
+    .update(collectionJobs)
+    .set({ status: 'running', startedAt: new Date() })
+    .where(eq(collectionJobs.id, jobId));
+
+  console.log(`Processing job ${jobId} for connector ${job.connectorId}`);
+}
+
+async function processConnectorCollections() {
+  console.log(`[${new Date().toISOString()}] Checking for active connectors...`);
+  
+  try {
+    const activeConnectors = await getActiveConnectors();
+    console.log(`Found ${activeConnectors.length} active connectors`);
+  } catch (error) {
+    console.error('Error fetching connectors:', error);
+  }
+}
 
 async function main() {
-  const env = requireEnv('COLLECTION_INTERVAL_MS');
+  const interval = requireEnv('COLLECTION_INTERVAL_MS');
   const concurrency = requireEnv('QUEUE_CONCURRENCY');
   
   console.log(`🚀 Guardiboard Worker starting...`);
-  console.log(`Collection interval: ${env}ms`);
+  console.log(`Collection interval: ${interval}ms`);
   console.log(`Concurrency: ${concurrency}`);
-  
+
+  processConnectorCollections();
+
   setInterval(() => {
-    console.log(`[${new Date().toISOString()}] Processing collection jobs...`);
-  }, env);
+    processConnectorCollections();
+  }, interval);
   
   console.log('✅ Worker is running');
 }
