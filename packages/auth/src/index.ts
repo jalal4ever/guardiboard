@@ -22,9 +22,9 @@ export interface SessionData {
 export function createToken(
   payload: Omit<TokenPayload, 'iat' | 'exp'>,
   secret: string,
-  expiresIn: string = '24h'
+  expiresIn: string | number = '24h'
 ): string {
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { expiresIn: expiresIn as any });
 }
 
 export function verifyToken(token: string, secret: string): TokenPayload | null {

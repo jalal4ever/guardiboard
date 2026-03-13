@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db, identityUsers, identityGroups, connectors } from '@guardiboard/db';
 import { authMiddleware, type AuthRequest } from '../middleware/auth';
-import { eq, sql, and, like, desc } from 'drizzle-orm';
+import { eq, sql, and, like, desc, or } from 'drizzle-orm';
 
 const router = Router();
 
@@ -12,15 +12,20 @@ router.get('/users', async (req: AuthRequest, res: Response) => {
     const tenantId = req.tenantId!;
     const { search, limit = 50, offset = 0 } = req.query;
 
-    let query = db.select().from(identityUsers).where(eq(identityUsers.tenantId, tenantId));
-
+    const conditions = [eq(identityUsers.tenantId, tenantId)];
     if (search) {
-      query = query.where(
-        sql`(${identityUsers.displayName} ILIKE ${'%' + String(search) + '%'} OR ${identityUsers.userPrincipalName} ILIKE ${'%' + String(search) + '%'})`
-      ) as typeof query;
+      conditions.push(
+        or(
+          like(identityUsers.displayName, `%${String(search)}%`),
+          like(identityUsers.userPrincipalName, `%${String(search)}%`)
+        ) as any
+      );
     }
 
-    const users = await query
+    const users = await db
+      .select()
+      .from(identityUsers)
+      .where(and(...conditions))
       .orderBy(desc(identityUsers.lastSeenAt))
       .limit(Number(limit))
       .offset(Number(offset));
@@ -47,15 +52,15 @@ router.get('/groups', async (req: AuthRequest, res: Response) => {
     const tenantId = req.tenantId!;
     const { search, limit = 50, offset = 0 } = req.query;
 
-    let query = db.select().from(identityGroups).where(eq(identityGroups.tenantId, tenantId));
-
+    const conditions = [eq(identityGroups.tenantId, tenantId)];
     if (search) {
-      query = query.where(
-        sql`${identityGroups.displayName} ILIKE ${'%' + String(search) + '%'}`
-      ) as typeof query;
+      conditions.push(like(identityGroups.displayName, `%${String(search)}%`) as any);
     }
 
-    const groups = await query
+    const groups = await db
+      .select()
+      .from(identityGroups)
+      .where(and(...conditions))
       .orderBy(desc(identityGroups.lastSeenAt))
       .limit(Number(limit))
       .offset(Number(offset));

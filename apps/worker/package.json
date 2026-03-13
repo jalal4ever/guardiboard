@@ -12,7 +12,8 @@
   "dependencies": {
     "@guardiboard/types": "workspace:*",
     "@guardiboard/db": "workspace:*",
-    "@guardiboard/config": "workspace:*"
+    "@guardiboard/config": "workspace:*",
+    "drizzle-orm": "^0.29.0"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

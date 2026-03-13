@@ -48,9 +48,9 @@ router.get('/overview', async (req: AuthRequest, res: Response) => {
       globalScore: latestScore ? Math.round((parseFloat(latestScore.score || '0') / parseFloat(latestScore.maxScore || '100')) * 100) : 0,
       userCount: userCount[0]?.count || 0,
       groupCount: groupCount[0]?.count || 0,
-      criticalFindings: parseInt(findingsCount[0]?.critical || '0'),
-      highFindings: parseInt(findingsCount[0]?.high || '0'),
-      totalFindings: parseInt(findingsCount[0]?.total || '0'),
+      criticalFindings: Number(findingsCount[0]?.critical || 0),
+      highFindings: Number(findingsCount[0]?.high || 0),
+      totalFindings: Number(findingsCount[0]?.total || 0),
       scoreHistory: scores,
     });
   } catch (error) {

@@ -26,7 +26,7 @@ export class GraphCollector {
     this.accessToken = config.accessToken;
   }
 
-  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  private async request<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {
@@ -41,7 +41,7 @@ export class GraphCollector {
       throw new Error(`Graph API error: ${response.status} - ${error}`);
     }
 
-    return response.json();
+    return response.json() as Promise<T>;
   }
 
   async collectOrganization(): Promise<CollectResult> {
@@ -65,16 +65,16 @@ export class GraphCollector {
 
   async collectUsers(): Promise<CollectResult> {
     try {
-      let users: any[] = [];
+      const users: any[] = [];
       let nextLink: string | undefined = '/users?$select=id,displayName,userPrincipalName,accountEnabled,createdDateTime,userType,assignedLicenses,onPremisesSyncEnabled&$top=999';
 
       while (nextLink) {
-        const endpoint = nextLink.startsWith('http') 
+        const endpoint: string = nextLink.startsWith('http') 
           ? nextLink.replace('https://graph.microsoft.com/v1.0', '') 
           : nextLink;
         
-        const data = await this.request<any>(endpoint);
-        users = [...users, ...(data.value || [])];
+        const data: any = await this.request(endpoint);
+        users.push(...(data.value || []));
         nextLink = data['@odata.nextLink'];
       }
 
@@ -95,16 +95,16 @@ export class GraphCollector {
 
   async collectGroups(): Promise<CollectResult> {
     try {
-      let groups: any[] = [];
+      const groups: any[] = [];
       let nextLink: string | undefined = '/groups?$select=id,displayName,groupTypes,securityEnabled,mailEnabled,onPremisesSyncEnabled&$top=999';
 
       while (nextLink) {
-        const endpoint = nextLink.startsWith('http') 
+        const endpoint: string = nextLink.startsWith('http') 
           ? nextLink.replace('https://graph.microsoft.com/v1.0', '') 
           : nextLink;
         
-        const data = await this.request<any>(endpoint);
-        groups = [...groups, ...(data.value || [])];
+        const data: any = await this.request(endpoint);
+        groups.push(...(data.value || []));
         nextLink = data['@odata.nextLink'];
       }
 

@@ -13,22 +13,21 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     const tenantId = req.tenantId!;
     const { severity, status, source, limit = 50, offset = 0 } = req.query;
 
-    let query = db
-      .select()
-      .from(findings)
-      .where(eq(findings.tenantId, tenantId));
-
+    const conditions = [eq(findings.tenantId, tenantId)];
     if (severity) {
-      query = query.where(eq(findings.severity, severity as string)) as typeof query;
+      conditions.push(eq(findings.severity, severity as any));
     }
     if (status) {
-      query = query.where(eq(findings.status, status as string)) as typeof query;
+      conditions.push(eq(findings.status, status as any));
     }
     if (source) {
-      query = query.where(eq(findings.source, source as string)) as typeof query;
+      conditions.push(eq(findings.source, source as any));
     }
 
-    const result = await query
+    const result = await db
+      .select()
+      .from(findings)
+      .where(and(...conditions))
       .orderBy(desc(findings.createdAt))
       .limit(Number(limit))
       .offset(Number(offset));
