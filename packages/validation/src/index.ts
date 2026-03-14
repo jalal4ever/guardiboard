@@ -8,6 +8,7 @@ export const createTenantSchema = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(63).regex(/^[a-z0-9-]+$/),
   scope: scopeSchema,
+  description: z.string().max(500).optional(),
 });
 
 export const updateTenantSchema = createTenantSchema.partial();

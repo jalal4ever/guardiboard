@@ -13,12 +13,49 @@ export const tenants = pgTable('tenants', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
   slug: varchar('slug', { length: 63 }).notNull().unique(),
+  description: varchar('description', { length: 500 }),
   status: tenantStatusEnum('status').notNull().default('pending'),
   scope: scopeEnum('scope').notNull().default('hybrid'),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
   slugIdx: index('idx_tenants_slug').on(table.slug),
+}));
+
+export const azureCredentials = pgTable('azure_credentials', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }).unique(),
+  clientId: varchar('client_id', { length: 100 }).notNull(),
+  clientSecretEncrypted: text('client_secret_encrypted').notNull(),
+  tenantIdAzure: varchar('tenant_id_azure', { length: 50 }),
+  certificatePath: varchar('certificate_path', { length: 500 }),
+  certificatePasswordEncrypted: text('certificate_password_encrypted'),
+  isConfigured: boolean('is_configured').notNull().default(false),
+  consentGranted: boolean('consent_granted').notNull().default(false),
+  consentGrantedAt: timestamp('consent_granted_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  tenantIdx: index('idx_azure_credentials_tenant').on(table.tenantId),
+}));
+
+export const adCredentials = pgTable('ad_credentials', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }).unique(),
+  username: varchar('username', { length: 255 }).notNull(),
+  passwordEncrypted: text('password_encrypted').notNull(),
+  domainFqdn: varchar('domain_fqdn', { length: 255 }).notNull(),
+  ldapHost: varchar('ldap_host', { length: 255 }),
+  ldapPort: varchar('ldap_port', { length: 10 }),
+  useSSL: boolean('use_ssl').notNull().default(true),
+  isConfigured: boolean('is_configured').notNull().default(false),
+  lastTestAt: timestamp('last_test_at'),
+  lastTestSuccess: boolean('last_test_success'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => ({
+  tenantIdx: index('idx_ad_credentials_tenant').on(table.tenantId),
 }));
 
 export const users = pgTable('users', {
@@ -235,3 +272,5 @@ export type Membership = typeof memberships.$inferSelect;
 export type Connector = typeof connectors.$inferSelect;
 export type Finding = typeof findings.$inferSelect;
 export type DashboardLayout = typeof dashboardLayouts.$inferSelect;
+export type AzureCredentials = typeof azureCredentials.$inferSelect;
+export type AdCredentials = typeof adCredentials.$inferSelect;

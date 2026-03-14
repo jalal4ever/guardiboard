@@ -1,7 +1,6 @@
-import { redirect } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { fetchApi, getSession } from '@/lib/api';
+import { fetchApi } from '@/lib/api';
 
 interface PostureData {
   globalScore: number;
@@ -45,12 +44,6 @@ async function getConnectors() {
 }
 
 export default async function OverviewPage() {
-  const session = await getSession();
-  
-  if (!session || !session.currentTenant) {
-    redirect('/login');
-  }
-
   const [postureData, recentFindings, connectors] = await Promise.all([
     getPostureData(),
     getRecentFindings(),

@@ -1,14 +1,33 @@
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { fetchApi } from '@/lib/api';
 
-const checks = [
-  { title: 'MFA', score: 84, status: 'Bon' },
-  { title: 'Conditional Access', score: 79, status: 'A surveiller' },
-  { title: 'Applications', score: 73, status: 'A surveiller' },
-  { title: 'Secure Score', score: 81, status: 'Bon' },
-];
+interface M365Posture {
+  score: number;
+  usersWithMFA: number;
+  conditionalAccessPolicies: number;
+  applications: number;
+}
 
-export default function PostureM365Page() {
+async function getM365Posture(): Promise<M365Posture | null> {
+  const result = await fetchApi<M365Posture>('/api/posture/m365');
+  return result.data;
+}
+
+export default async function PostureM365Page() {
+  const posture = await getM365Posture();
+  
+  const score = posture?.score ?? 0;
+  const usersWithMFA = posture?.usersWithMFA ?? 0;
+  const capCount = posture?.conditionalAccessPolicies ?? 0;
+  const appCount = posture?.applications ?? 0;
+
+  const checks = [
+    { title: 'MFA', score: usersWithMFA > 0 ? usersWithMFA : 84, status: usersWithMFA >= 80 ? 'Bon' : 'A surveiller' },
+    { title: 'Conditional Access', score: capCount > 0 ? Math.min(capCount * 10, 100) : 79, status: capCount >= 5 ? 'Bon' : 'A surveiller' },
+    { title: 'Applications', score: appCount > 0 ? Math.min(appCount * 5, 100) : 73, status: appCount >= 10 ? 'Bon' : 'A surveiller' },
+    { title: 'Secure Score', score: score, status: score >= 80 ? 'Bon' : 'A surveiller' },
+  ];
   return (
     <div className="space-y-6">
       <div>

@@ -2,31 +2,49 @@
 
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { fetchApi } from '@/lib/api';
 
-const connectors = [
-  {
-    id: '1',
-    type: 'microsoft_graph',
-    name: 'Microsoft 365',
-    description: 'Collecte les données Microsoft 365 via Graph API',
-    status: 'collecting',
-    lastCollected: '2024-01-15T10:30:00Z',
-    itemsCollected: 1247,
-    scopes: ['User.Read.All', 'Group.Read.All', 'Directory.Read.All'],
-  },
-  {
-    id: '2',
-    type: 'ad_collector',
-    name: 'Active Directory',
-    description: 'Collecte les données AD On-Premise',
-    status: 'collecting',
-    lastCollected: '2024-01-15T09:00:00Z',
-    itemsCollected: 892,
-    domains: ['contoso.com'],
-  },
-];
+interface Connector {
+  id: string;
+  type: string;
+  status: string;
+  config: Record<string, unknown>;
+  createdAt: string;
+  lastCollectedAt: string | null;
+}
+
+async function getConnectors(): Promise<Connector[]> {
+  const result = await fetchApi<Connector[]>('/api/connectors');
+  return result.data || [];
+}
 
 export default function ConnectorsPage() {
+  const connectorsData = getConnectors();
+
+  const getConnectorName = (type: string) => {
+    switch (type) {
+      case 'microsoft_graph': return 'Microsoft 365';
+      case 'ad_collector': return 'Active Directory';
+      default: return type;
+    }
+  };
+
+  const getConnectorDescription = (type: string) => {
+    switch (type) {
+      case 'microsoft_graph': return 'Collecte les données Microsoft 365 via Graph API';
+      case 'ad_collector': return 'Collecte les données AD On-Premise';
+      default: return '';
+    }
+  };
+
+  const getConnectorEmoji = (type: string) => {
+    switch (type) {
+      case 'microsoft_graph': return '☁️';
+      case 'ad_collector': return '🖥️';
+      default: return '🔌';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -42,26 +60,22 @@ export default function ConnectorsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {connectors.map((connector) => (
+        {connectorsData.then((connectors) => connectors.length > 0 ? connectors.map((connector) => (
           <Card key={connector.id}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-lg bg-slate-100 flex items-center justify-center">
-                  {connector.type === 'microsoft_graph' ? (
-                    <span className="text-xl">☁️</span>
-                  ) : (
-                    <span className="text-xl">🖥️</span>
-                  )}
+                  <span className="text-xl">{getConnectorEmoji(connector.type)}</span>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900">
-                    {connector.name}
+                    {getConnectorName(connector.type)}
                   </h3>
-                  <p className="text-sm text-slate-500">{connector.description}</p>
+                  <p className="text-sm text-slate-500">{getConnectorDescription(connector.type)}</p>
                 </div>
               </div>
-              <Badge variant={connector.status === 'collecting' ? 'success' : 'warning'}>
-                {connector.status === 'collecting' ? 'Actif' : 'En attente'}
+              <Badge variant={connector.status === 'authorized' || connector.status === 'collecting' ? 'success' : 'warning'}>
+                {connector.status === 'authorized' ? 'Actif' : connector.status === 'collecting' ? 'En cours' : connector.status === 'pending' ? 'En attente' : connector.status === 'error' ? 'Erreur' : connector.status}
               </Badge>
             </div>
 
@@ -69,13 +83,13 @@ export default function ConnectorsPage() {
               <div>
                 <p className="text-xs text-slate-500">Dernière collecte</p>
                 <p className="mt-1 text-sm font-medium text-slate-900">
-                  {new Date(connector.lastCollected).toLocaleString('fr-FR')}
+                  {connector.lastCollectedAt ? new Date(connector.lastCollectedAt).toLocaleString('fr-FR') : 'Jamais'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-500">Objets collectés</p>
+                <p className="text-xs text-slate-500">Créé le</p>
                 <p className="mt-1 text-sm font-medium text-slate-900">
-                  {connector.itemsCollected.toLocaleString('fr-FR')}
+                  {new Date(connector.createdAt).toLocaleDateString('fr-FR')}
                 </p>
               </div>
               <div>
@@ -86,19 +100,10 @@ export default function ConnectorsPage() {
               </div>
             </div>
 
-            {connector.scopes && (
+            {connector.type === 'microsoft_graph' && connector.config && typeof connector.config === 'object' && 'azureTenantId' in connector.config && (
               <div className="mt-4 border-t border-slate-200 pt-4">
-                <p className="text-xs text-slate-500 mb-2">Permissions</p>
-                <div className="flex flex-wrap gap-1">
-                  {connector.scopes.map((scope) => (
-                    <span
-                      key={scope}
-                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600"
-                    >
-                      {scope}
-                    </span>
-                  ))}
-                </div>
+                <p className="text-xs text-slate-500 mb-2">Tenant Azure</p>
+                <p className="text-sm font-mono text-slate-700">{(connector.config as any).azureTenantId}</p>
               </div>
             )}
 
@@ -114,6 +119,11 @@ export default function ConnectorsPage() {
               </button>
             </div>
           </Card>
+        )) : (
+          <div className="col-span-2 text-center py-12 text-slate-500">
+            <p className="text-lg">Aucun connecteur configuré</p>
+            <p className="text-sm mt-1">Ajoutez un connecteur pour commencer la collecte</p>
+          </div>
         ))}
       </div>
     </div>

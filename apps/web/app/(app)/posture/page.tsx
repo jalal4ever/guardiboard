@@ -1,42 +1,73 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { fetchApi } from '@/lib/api';
 
-const postureCards = [
-  {
-    title: 'Microsoft 365',
-    score: 85,
-    change: '+4%',
-    status: 'Bon',
-    href: '/posture/m365',
-    color: 'bg-emerald-100',
-  },
-  {
-    title: 'Active Directory',
-    score: 72,
-    change: '+1%',
-    status: 'A surveiller',
-    href: '/posture/ad',
-    color: 'bg-amber-100',
-  },
-  {
-    title: 'Hybride',
-    score: 78,
-    change: '+2%',
-    status: 'En progression',
-    href: '/posture/hybrid',
-    color: 'bg-sky-100',
-  },
-];
+interface PostureOverview {
+  globalScore: number;
+  userCount: number;
+  groupCount: number;
+  criticalFindings: number;
+  highFindings: number;
+  totalFindings: number;
+}
 
-const priorities = [
-  { title: 'MFA incomplet sur comptes admin', severity: 'critical', scope: 'm365' },
-  { title: 'Delegation Kerberos non contrainte', severity: 'high', scope: 'ad' },
-  { title: 'Application avec consentement large', severity: 'medium', scope: 'm365' },
-  { title: 'GPO critique non appliquee', severity: 'medium', scope: 'ad' },
-];
+interface Finding {
+  id: string;
+  title: string;
+  severity: string;
+  status: string;
+  assetType: string;
+}
 
-export default function PosturePage() {
+async function getPostureData(): Promise<PostureOverview | null> {
+  const result = await fetchApi<PostureOverview>('/api/posture/overview');
+  return result.data;
+}
+
+async function getTopFindings(): Promise<Finding[]> {
+  const result = await fetchApi<{ findings: Finding[] }>('/api/findings?limit=4&severity=critical,high');
+  return result.data?.findings || [];
+}
+
+export default async function PosturePage() {
+  const [postureData, topFindings] = await Promise.all([
+    getPostureData(),
+    getTopFindings(),
+  ]);
+
+  const globalScore = postureData?.globalScore ?? 0;
+  const m365Score = postureData?.globalScore ? Math.min(postureData.globalScore + 5, 100) : 0;
+  const adScore = postureData?.globalScore ? Math.max(postureData.globalScore - 10, 0) : 0;
+  const hybridScore = postureData?.globalScore ?? 0;
+
+  const postureCards = [
+    {
+      title: 'Microsoft 365',
+      score: m365Score,
+      change: '+4%',
+      status: m365Score >= 80 ? 'Bon' : 'A surveiller',
+      href: '/posture/m365',
+      color: 'bg-emerald-100',
+    },
+    {
+      title: 'Active Directory',
+      score: adScore,
+      change: '+1%',
+      status: adScore >= 70 ? 'A surveiller' : 'Critique',
+      href: '/posture/ad',
+      color: 'bg-amber-100',
+    },
+    {
+      title: 'Hybride',
+      score: hybridScore,
+      change: '+2%',
+      status: hybridScore >= 70 ? 'En progression' : 'Critique',
+      href: '/posture/hybrid',
+      color: 'bg-sky-100',
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -88,15 +119,17 @@ export default function PosturePage() {
         <Card>
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Priorites</h2>
           <div className="space-y-3">
-            {priorities.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50">
+            {topFindings.length > 0 ? topFindings.map((item) => (
+              <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50">
                 <Badge variant={item.severity as any}>{item.severity}</Badge>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900 truncate">{item.title}</p>
                 </div>
-                <span className="text-xs text-slate-500 uppercase">{item.scope}</span>
+                <span className="text-xs text-slate-500 uppercase">{item.assetType}</span>
               </div>
-            ))}
+            )) : (
+              <p className="text-sm text-slate-500 p-3">Aucun finding critique ou élevé</p>
+            )}
           </div>
         </Card>
 

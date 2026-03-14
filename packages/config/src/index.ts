@@ -1,19 +1,21 @@
 import { z } from 'zod';
 
+export { encrypt, decrypt, hashPassword, verifyPassword } from './encryption';
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
-  APP_URL: z.string().url().default('http://localhost:3000'),
+  APP_URL: z.string().default('http://localhost:3000'),
 
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string(),
 
   SESSION_SECRET: z.string().min(32),
   SESSION_MAX_AGE: z.coerce.number().default(86400000),
 
-  OAUTH_ISSUER: z.string().url().optional(),
+  OAUTH_ISSUER: z.string().optional(),
   OAUTH_CLIENT_ID: z.string().optional(),
   OAUTH_CLIENT_SECRET: z.string().optional(),
-  OAUTH_REDIRECT_URI: z.string().url().optional(),
+  OAUTH_REDIRECT_URI: z.string().optional(),
 
   AZURE_TENANT_ID: z.string().optional(),
   AZURE_CLIENT_ID: z.string().optional(),
@@ -22,15 +24,15 @@ export const envSchema = z.object({
   AZURE_CLIENT_CERT_PASSWORD: z.string().optional(),
 
   GRAPH_API_SCOPE: z.string().default('https://graph.microsoft.com/.default'),
-  GRAPH_API_BASE_URL: z.string().url().default('https://graph.microsoft.com/v1.0'),
+  GRAPH_API_BASE_URL: z.string().default('https://graph.microsoft.com/v1.0'),
 
-  AZURE_KEY_VAULT_URL: z.string().url().optional(),
+  AZURE_KEY_VAULT_URL: z.string().optional(),
   AZURE_KEY_VAULT_TENANT_ID: z.string().optional(),
   AZURE_KEY_VAULT_CLIENT_ID: z.string().optional(),
   AZURE_KEY_VAULT_CLIENT_SECRET: z.string().optional(),
 
   COLLECTOR_ENROLLMENT_TOKEN_SECRET: z.string().min(16),
-  COLLECTOR_API_URL: z.string().url().optional(),
+  COLLECTOR_API_URL: z.string().optional(),
 
   QUEUE_CONCURRENCY: z.coerce.number().default(5),
   COLLECTION_INTERVAL_MS: z.coerce.number().default(3600000),

@@ -1,14 +1,33 @@
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { fetchApi } from '@/lib/api';
 
-const checks = [
-  { title: 'Comptes privilegies', score: 68, status: 'A surveiller' },
-  { title: 'Delegation', score: 62, status: 'A corriger' },
-  { title: 'Politique de mot de passe', score: 78, status: 'Bon' },
-  { title: 'GPO critiques', score: 71, status: 'A surveiller' },
-];
+interface ADPosture {
+  score: number;
+  domainCount: number;
+  privilegedAccounts: number;
+  trusts: string[];
+  gpoCount: number;
+}
 
-export default function PostureAdPage() {
+async function getADPosture(): Promise<ADPosture | null> {
+  const result = await fetchApi<ADPosture>('/api/posture/ad');
+  return result.data;
+}
+
+export default async function PostureAdPage() {
+  const posture = await getADPosture();
+  
+  const score = posture?.score ?? 0;
+  const domainCount = posture?.domainCount ?? 0;
+  const privilegedAccounts = posture?.privilegedAccounts ?? 0;
+
+  const checks = [
+    { title: 'Comptes privilegies', score: privilegedAccounts > 0 ? Math.min(100 - privilegedAccounts, 100) : 68, status: privilegedAccounts < 5 ? 'Bon' : 'A surveiller' },
+    { title: 'Delegation', score: 62, status: 'A corriger' },
+    { title: 'Politique de mot de passe', score: 78, status: 'Bon' },
+    { title: 'GPO critiques', score: posture?.gpoCount ?? 71, status: 'A surveiller' },
+  ];
   return (
     <div className="space-y-6">
       <div>

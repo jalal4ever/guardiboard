@@ -1,5 +1,3 @@
-import { cookies } from 'next/headers';
-
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 
 export interface SessionUser {
@@ -12,7 +10,9 @@ export interface Tenant {
   id: string;
   name: string;
   slug: string;
+  description?: string | null;
   scope: string;
+  isActive?: boolean;
   role: string;
 }
 
@@ -38,14 +38,19 @@ export async function fetchApi<T>(
   };
 
   if (requireAuth) {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('auth_token');
+    try {
+      const { cookies } = await import('next/headers');
+      const cookieStore = cookies();
+      const sessionCookie = cookieStore.get('gb_session');
 
-    if (!sessionCookie) {
+      if (!sessionCookie) {
+        return { data: null, error: 'Not authenticated', status: 401 };
+      }
+
+      headers['Authorization'] = `Bearer ${sessionCookie.value}`;
+    } catch {
       return { data: null, error: 'Not authenticated', status: 401 };
     }
-
-    headers['Authorization'] = `Bearer ${sessionCookie.value}`;
   }
 
   try {
@@ -70,23 +75,33 @@ export async function fetchApi<T>(
 }
 
 export async function getSession(): Promise<Session | null> {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('auth_token');
-  
-  if (!sessionCookie) {
+  try {
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('gb_session');
+    
+    if (!sessionCookie) {
+      return null;
+    }
+
+    const result = await fetchApi<Session>('/api/auth/me', { requireAuth: false });
+
+    if (result.error || !result.data) {
+      return null;
+    }
+
+    return result.data;
+  } catch {
     return null;
   }
-
-  const result = await fetchApi<Session>('/api/auth/me', { requireAuth: false });
-
-  if (result.error || !result.data) {
-    return null;
-  }
-
-  return result.data;
 }
 
 export async function clearSession(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete('auth_token');
+  try {
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    cookieStore.delete('gb_session');
+  } catch {
+    // Ignore errors in client components
+  }
 }

@@ -2,16 +2,32 @@
 
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { fetchApi } from '@/lib/api';
 
-const groups = [
-  { id: '1', name: 'Domain Admins', type: 'security', members: 3, privileged: true },
-  { id: '2', name: 'Enterprise Admins', type: 'security', members: 1, privileged: true },
-  { id: '3', name: 'IT Support', type: 'security', members: 5, privileged: false },
-  { id: '4', name: 'All Employees', type: 'distribution', members: 245, privileged: false },
-  { id: '5', name: 'External Consultants', type: 'security', members: 0, privileged: false },
-];
+interface IdentityGroup {
+  id: string;
+  displayName: string | null;
+  mail: string | null;
+  groupTypes: string[];
+  isPrivileged: boolean;
+  memberCount: number | null;
+  source: string;
+  lastSeenAt: string | null;
+}
+
+interface GroupsResponse {
+  groups: IdentityGroup[];
+  total: number;
+}
+
+async function getGroups(): Promise<GroupsResponse> {
+  const result = await fetchApi<GroupsResponse>('/api/assets/groups');
+  return result.data || { groups: [], total: 0 };
+}
 
 export default function AssetsGroupsPage() {
+  const groupsData = getGroups();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -44,22 +60,28 @@ export default function AssetsGroupsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {groups.map((group) => (
+              {groupsData.then(({ groups }) => groups.length > 0 ? groups.map((group) => (
                 <tr key={group.id} className="hover:bg-slate-50">
                   <td className="py-3">
-                    <p className="text-sm font-medium text-slate-900">{group.name}</p>
+                    <p className="text-sm font-medium text-slate-900">{group.displayName || group.mail}</p>
                   </td>
                   <td className="py-3">
-                    <Badge variant={group.type === 'security' ? 'info' : 'default'}>
-                      {group.type === 'security' ? 'Sécurité' : 'Distribution'}
+                    <Badge variant={group.groupTypes?.includes('SecurityEnabled') ? 'info' : 'default'}>
+                      {group.groupTypes?.includes('SecurityEnabled') ? 'Sécurité' : 'Distribution'}
                     </Badge>
                   </td>
-                  <td className="py-3 text-sm text-slate-900">{group.members}</td>
+                  <td className="py-3 text-sm text-slate-900">{group.memberCount ?? 0}</td>
                   <td className="py-3">
-                    {group.privileged && <Badge variant="warning">Privilégié</Badge>}
+                    {group.isPrivileged && <Badge variant="warning">Privilégié</Badge>}
                   </td>
                   <td className="py-3">
                     <button className="text-sm text-accent-600 hover:text-accent-700">Voir</button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-500">
+                    Aucun groupe trouvé
                   </td>
                 </tr>
               ))}

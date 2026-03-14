@@ -51,7 +51,9 @@ router.post('/login', async (req: AuthRequest, res: Response) => {
       id: tenant.id,
       name: tenant.name,
       slug: tenant.slug,
+      description: tenant.description,
       scope: tenant.scope,
+      isActive: tenant.isActive,
       role: membership.role,
     }));
 
@@ -120,13 +122,36 @@ router.post('/switch-tenant', authMiddleware, async (req: AuthRequest, res: Resp
       secret
     );
 
+    const allMemberships = await db
+      .select({
+        tenant: tenants,
+        membership: memberships,
+      })
+      .from(memberships)
+      .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
+      .where(eq(memberships.userId, req.user.sub));
+
+    const tenantList = allMemberships.map(({ tenant, membership }) => ({
+      id: tenant.id,
+      name: tenant.name,
+      slug: tenant.slug,
+      description: tenant.description,
+      scope: tenant.scope,
+      isActive: tenant.isActive,
+      role: membership.role,
+    }));
+
     res.json({
       token: tenantToken,
-      tenant: {
+      user: { id: req.user.sub, email: req.user.email },
+      tenants: tenantList,
+      currentTenant: {
         id: tenant.id,
         name: tenant.name,
         slug: tenant.slug,
+        description: tenant.description,
         scope: tenant.scope,
+        isActive: tenant.isActive,
       },
       role: membership[0].role,
     });
@@ -167,14 +192,18 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
       id: tenant.id,
       name: tenant.name,
       slug: tenant.slug,
+      description: tenant.description,
       scope: tenant.scope,
+      isActive: tenant.isActive,
       role: membership.role,
     }));
 
     res.json({
       user: { id: user.id, email: user.email, name: user.name },
       tenants: tenantList,
-      currentTenant: req.tenantId ? tenantList.find(t => t.id === req.tenantId) : null,
+      currentTenant: req.tenantId ? {
+        ...tenantList.find(t => t.id === req.tenantId),
+      } : null,
       role: req.userRole,
     });
   } catch (error) {
@@ -237,7 +266,9 @@ router.post('/register', async (req: AuthRequest, res: Response) => {
         id: tenant.id,
         name: tenant.name,
         slug: tenant.slug,
+        description: tenant.description,
         scope: tenant.scope,
+        isActive: tenant.isActive,
         role: 'tenant_admin',
       }],
       requiresTenantSelection: false,

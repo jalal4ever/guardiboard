@@ -2,16 +2,33 @@
 
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { fetchApi } from '@/lib/api';
 
-const users = [
-  { id: '1', name: 'Admin Contoso', email: 'admin@contoso.com', status: 'active', privileged: true, mfa: true },
-  { id: '2', name: 'John Doe', email: 'john.doe@contoso.com', status: 'active', privileged: false, mfa: true },
-  { id: '3', name: 'Jane Smith', email: 'jane.smith@contoso.com', status: 'active', privileged: false, mfa: false },
-  { id: '4', name: 'Service Account SA-SQL', email: 'sa-sql@contoso.com', status: 'active', privileged: true, mfa: false },
-  { id: '5', name: 'Former Employee', email: 'former@contoso.com', status: 'disabled', privileged: false, mfa: false },
-];
+interface IdentityUser {
+  id: string;
+  displayName: string | null;
+  userPrincipalName: string | null;
+  mail: string | null;
+  accountEnabled: boolean;
+  isPrivileged: boolean;
+  mfaEnabled: boolean | null;
+  source: string;
+  lastSeenAt: string | null;
+}
+
+interface UsersResponse {
+  users: IdentityUser[];
+  total: number;
+}
+
+async function getUsers(): Promise<UsersResponse> {
+  const result = await fetchApi<UsersResponse>('/api/assets/users');
+  return result.data || { users: [], total: 0 };
+}
 
 export default function AssetsUsersPage() {
+  const usersData = getUsers();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -44,29 +61,37 @@ export default function AssetsUsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {users.map((user) => (
+              {usersData.then(({ users }) => users.length > 0 ? users.map((user) => (
                 <tr key={user.id} className="hover:bg-slate-50">
                   <td className="py-3">
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{user.name}</p>
-                      <p className="text-xs text-slate-500">{user.email}</p>
+                      <p className="text-sm font-medium text-slate-900">{user.displayName || user.userPrincipalName}</p>
+                      <p className="text-xs text-slate-500">{user.mail || user.userPrincipalName}</p>
                     </div>
                   </td>
                   <td className="py-3">
-                    <Badge variant={user.status === 'active' ? 'success' : 'default'}>
-                      {user.status === 'active' ? 'Actif' : 'Désactivé'}
+                    <Badge variant={user.accountEnabled ? 'success' : 'default'}>
+                      {user.accountEnabled ? 'Actif' : 'Désactivé'}
                     </Badge>
                   </td>
                   <td className="py-3">
-                    {user.privileged && <Badge variant="warning">Privilégié</Badge>}
+                    {user.isPrivileged && <Badge variant="warning">Privilégié</Badge>}
                   </td>
                   <td className="py-3">
-                    <Badge variant={user.mfa ? 'success' : 'error'}>
-                      {user.mfa ? 'Activé' : 'Désactivé'}
-                    </Badge>
+                    {user.mfaEnabled !== null && (
+                      <Badge variant={user.mfaEnabled ? 'success' : 'error'}>
+                        {user.mfaEnabled ? 'Activé' : 'Désactivé'}
+                      </Badge>
+                    )}
                   </td>
                   <td className="py-3">
                     <button className="text-sm text-accent-600 hover:text-accent-700">Voir</button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-500">
+                    Aucun utilisateur trouvé
                   </td>
                 </tr>
               ))}
